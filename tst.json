@@ -1,0 +1,42 @@
+{
+  "usuario": {
+    "nome": "John Doe",
+    "email": "john@example.com",
+    "lista_tarefas": [
+      {
+        "titulo": "Task 1",
+        "descricao": "Description for Task 1",
+        "status": "completa",
+        "data_criacao": "01-01-2023",
+        "data_conclusao": "02-01-2023"
+      },
+      {
+        "titulo": "Task 2",
+        "descricao": "Description for Task 2",
+        "status": "ativa",
+        "data_criacao": "03-01-2023",
+        "data_conclusao": null
+      }
+    ]
+  },
+  "projeto": {
+    "nome": "Project A",
+    "descricao": "Description for Project A",
+    "lista_tarefas": [
+      {
+        "titulo": "Project Task 1",
+        "descricao": "Description for Project Task 1",
+        "status": "completa",
+        "data_criacao": "05-01-2023",
+        "data_conclusao": "06-01-2023"
+      },
+      {
+        "titulo": "Project Task 2",
+        "descricao": "Description for Project Task 2",
+        "status": "ativa",
+        "data_criacao": "07-01-2023",
+        "data_conclusao": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "usuarios": [
+    {
+      "nome": "0",
+      "email": "",
+      "lista_tarefas": [
+        {
+          "titulo": "",
+          "descricao": "",
+          "status": "ativa",
+          "data_criacao": "10-12-2023",
+          "data_conclusao": null
+        }
+      ]
+    }
+  ],
+  "projetos": [
+    {
+      "nome": "",
+      "descricao": "",
+      "lista_tarefas": [
+        {
+          "titulo": "",
+          "descricao": "",
+          "status": "ativa",
+          "data_criacao": "10-12-2023",
+          "data_conclusao": null
+        }
+      ]
+    }
+  ]
+}
