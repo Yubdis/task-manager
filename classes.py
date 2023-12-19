@@ -1,201 +1,371 @@
-import json
+import mysql.connector
 from datetime import datetime
 
 
-class Tarefa:
-    lista_tarefas = []
+class bancoDados:
+    # O construtor é um método especial que é executado automaticamente quando um objeto da classe é criado.
+    # Ele inicializa as propriedades da classe.
+    def init(self):
+        self.conexao = None
+        self.cursor = None
 
-    def __init__(self, titulo, descricao=None, status=None):
-        self._titulo = titulo
-        self._descricao = descricao
-        self._status = status
-        self._data_criacao = datetime.now()
-        self._data_conclusao = None
-        Tarefa.lista_tarefas.append(self)
+    # Cria uma conexão com o banco, define um objeto de conexão chamado self.conexao que será usado para se conectar ao banco de dados.
+    def conectar(self):
+        self.conexao = mysql.connector.connect(
+            host="localhost", user="root", password="", database="OOP"
+        )
+        self.cursor = self.conexao.cursor()
 
-    def alterar_status(self):
-        if self._status is None:
-            self._status = "ativa"
-            self._data_criacao = datetime.now()
-        elif self._status == "ativa":
-            self._status = "completa"
-            self._data_conclusao = datetime.now()
-
-    def atualizar_descricao(self, descricao):
-        self._descricao = descricao
-
-    def get_titulo(self):
-        return self._titulo
-
-    def get_status(self):
-        return self._status
-
-    def to_dict(self):
-        return {
-            "titulo": self._titulo,
-            "descricao": self._descricao,
-            "status": self._status,
-            "data_criacao": self._data_criacao.strftime("%d-%m-%Y"),
-            "data_conclusao": self._data_conclusao.strftime("%d-%m-%Y")
-            if self._data_conclusao
-            else None,
-        }
-
-    @classmethod
-    def from_dict(cls, task_dict):
-        try:
-            task = cls(task_dict["titulo"], task_dict["descricao"], task_dict["status"])
-            task._data_criacao = datetime.strptime(
-                task_dict["data_criacao"], "%d-%m-%Y"
-            )
-            if task_dict["data_conclusao"]:
-                task._data_conclusao = datetime.strptime(
-                    task_dict["data_conclusao"], "%d-%m-%Y"
-                )
-            return task
-        except KeyError as e:
-            raise ValueError(f"Missing key in task data: {e}")
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Error creating task from data: {e}")
+    # Fecha a conexão com o banco de dados.
+    def fechar_conexao(self):
+        # Verifica se o cursor está aberto e o fecha.
+        if self.cursor:
+            self.cursor.close()
+        # Verifica se a conexão está aberta e a fecha.
+        if self.conexao:
+            self.conexao.close()
 
 
-class Usuario:
-    lista_usuarios = []
+class UsuarioBD(bancoDados):
+    def init(self):
+        # Chama o construtor da classe pai (superclasse) para inicializar as propriedades da classe base.
+        super().init()
 
-    def __init__(self, nome, email):
-        self._nome = nome
-        self._email = email
-        self._lista_tarefas = []
-        Usuario.lista_usuarios.append(self)
+    # Cria um novo usuário no banco de dados.
+    def create_usuario(self, nome, email):
+        self.conectar()
+        command = f'INSERT INTO usuarios (nome, email) VALUES ("{nome}", "{email}")'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        self.fechar_conexao()
 
-    def criar_tarefa(self, titulo, descricao=None):
-        nova_tarefa = Tarefa(titulo, descricao)
-        nova_tarefa.alterar_status()
-        self._lista_tarefas.append(nova_tarefa)
+    # Relaciona usuários a tarefas no banco de dados.
+    def relacionar_usuarios_tarefas(self, idUsuarios, idTarefas):
+        self.conectar()
+        command = f"INSERT INTO usuariostarefas (idTarefas, idUsuarios) VALUES ({idTarefas}, {idUsuarios})"
+        self.cursor.execute(command)
+        self.conexao.commit()
+        self.fechar_conexao()
 
-    def remove_tarefa(self, item_index):
-        del self._lista_tarefas[item_index]
+    # Retorna todos os usuários do banco de dados.
+    def read_usuarios(self):
+        self.conectar()
+        command = "SELECT * FROM usuarios"
+        self.cursor.execute(command)
+        resultados = self.cursor.fetchall()
+        self.fechar_conexao()
+        return resultados
 
-    def marcar_concluida(self, tarefa):
-        if tarefa in self._lista_tarefas:
-            tarefa.alterar_status()
+    # Atualiza o e-mail de um usuário no banco de dados.
+    def update_usuario(self, idUsuario, novo_email):
+        self.conectar()
+        command = f'UPDATE usuarios SET email = "{novo_email}" WHERE idUsuarios = "{idUsuario}"'
+        self.cursor.execute(command)
+        self.cursor.rowcount
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
+
+    # Exclui um usuário do banco de dados com base no nome.
+    def delete_usuario(self, nome):
+        self.conectar()
+        command = f'DELETE FROM usuarios WHERE nome = "{nome}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
+
+    # Busca um usuário no banco de dados com base no ID.
+    def buscar_usuario_por_id(self, idUsuario):
+        self.conectar()
+        command = f'SELECT * FROM usuarios WHERE idUsuarios = "{idUsuario}"'
+        self.cursor.execute(command)
+        cliente = self.cursor.fetchone()
+        self.fechar_conexao()
+        return cliente
+
+
+class TarefaBD(bancoDados):
+    def __init__(self):
+        # Chama o construtor da classe pai (superclasse) para inicializar as propriedades da classe base.
+        super().__init__()
+
+    # Cria uma nova tarefa no banco de dados.
+    def create_tarefa(self, titulo, descricao, status, nomeProjeto):
+        self.conectar()
+        # Obtém a data e hora atuais para a data de criação da tarefa.
+        dataCriacao = datetime.now()
+        status = status.upper()
+        # Verifica se o projeto existe e obtém o ID do projeto.
+        idProjeto = self.verificar_projeto_existente(nomeProjeto)
+        if idProjeto is None:
+            raise ValueError(f"Projeto '{nomeProjeto}' não encontrado.")
+
+        command = f'INSERT INTO tarefas (titulo, descricao, status, dataCriacao, idProjeto) VALUES ("{titulo}","{descricao}" ,"{status}","{dataCriacao}" ,"{idProjeto}")'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        self.fechar_conexao()
+
+    # Atribui tarefa(s) a usuário(s) no banco de dados.
+    def atribuir_tarefa_a_usuarios(self, idTarefas, idUsuario):
+        self.conectar()
+        for idUsuario in idUsuario:
+            command = f"INSERT INTO usuariostarefas (idTarefas, idUsuario) VALUES ({idTarefas}, {idUsuario})"
+            self.cursor.execute(command)
+        self.conexao.commit()
+        self.fechar_conexao()
+
+    # Remove a atribuição de uma tarefa a um usuário no banco de dados.
+    def remover_atribuicao_tarefa_usuario(self, idTarefas, idUsuario):
+        self.conectar()
+        command = f"DELETE FROM usuariostarefas WHERE idTarefas = {idTarefas} AND idUsuario = {idUsuario}"
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
+
+    # Verifica se um projeto existe no banco de dados e retorna o ID do projeto.
+    def verificar_projeto_existente(self, nomeProjeto):
+        self.conectar()
+        command = f'SELECT idProjeto  FROM projetos WHERE nomeProjeto = "{nomeProjeto}"'
+        self.cursor.execute(command)
+        resultado = self.cursor.fetchone()
+
+        if resultado is not None:
+            return resultado[0]
         else:
-            print("Error: Task not found in user's task list.")
+            return None
 
-    def get_lista_tarefas(self):
-        return self._lista_tarefas
+    # Atualiza a descrição de uma tarefa no banco de dados.
+    def update_tarefa(self, titulo, nova_descricao):
+        self.conectar()
+        command = f'UPDATE tarefas SET descricao = "{nova_descricao}" WHERE titulo = "{titulo}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
 
-    def get_nome(self):
-        return self._nome
+    # Altera o status de uma tarefa no banco de dados.
+    def alterar_status_tarefa(self, titulo, novo_status):
+        self.conectar()
+        novo_status = novo_status.upper()
+        if novo_status not in ["A", "I", "C"]:
+            raise ValueError("Status inválido. Deve ser A, I ou C.")
+        command = f'UPDATE tarefas SET status = "{novo_status} "'
+        # Se o novo status for "C" (Concluído), atualiza a dataConclusao para a data de hoje quando ele conclui a tarefa
+        if novo_status == "C":
+            data_conclusao = datetime.now()
+            command += f', dataConclusao = "{data_conclusao} "'
+        command += f' WHERE titulo = "{titulo}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
 
-    def get_email(self):
-        return self._email
+    # Retorna todas as tarefas do banco de dados.
+    def read_tarefas(self):
+        self.conectar()
+        command = f"SELECT * FROM tarefas"
+        self.cursor.execute(command)
+        resultados = self.cursor.fetchall()
+        self.fechar_conexao()
+        return resultados
 
-    def to_dict(self):
-        return {
-            "nome": self._nome,
-            "email": self._email,
-            "lista_tarefas": [tarefa.to_dict() for tarefa in self._lista_tarefas],
-        }
-
-    @classmethod
-    def from_dict(cls, user_dict):
-        try:
-            user = cls(user_dict["nome"], user_dict["email"])
-            user._lista_tarefas = [
-                Tarefa.from_dict(task_dict) for task_dict in user_dict["lista_tarefas"]
-            ]
-            return user
-        except KeyError as e:
-            raise ValueError(f"Missing key in user data: {e}")
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Error creating user from data: {e}")
+    # Exclui uma tarefa do banco de dados com base no título.
+    def delete_tarefa(self, titulo):
+        self.conectar()
+        command = f'DELETE FROM tarefas WHERE titulo = "{titulo}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
 
 
-class Projeto:
-    lista_projetos = []
+# class Tarefa:
+#     def __init__(self, titulo, descricao):
+#         self.__titulo = titulo
+#         self.__descricao = descricao
+#         self.__status = None
+#         self.__data_criacao = None
+#         self.__data_conclusao = None
 
-    def __init__(self, nome, descricao=None):
-        self._nome = nome
-        self._descricao = descricao
-        self._lista_tarefas = []
-        Projeto.lista_projetos.append(self)
+#     def alterar_status(self):
+#         if self.__status is None:
+#             self.__status = "ativa"
+#             self.__data_criacao = datetime.now()
+#         elif self.__status == "ativa":
+#             self.__status = "completa"
+#             self.__data_conclusao = datetime.now()
 
-    def adicionar_tarefa(self, tarefa, usuario):
-        if not isinstance(tarefa, Tarefa) or not isinstance(usuario, Usuario):
-            print("Error: Invalid task or user provided.")
-            return
+#     def atualizar_descricao(self, descricao):
+#         self.__descricao = descricao
 
-        if tarefa in self._lista_tarefas:
-            print(f"Error: Task '{tarefa._titulo}' Ja esta no projeto.")
-            return
+#     def get_titulo(self):
+#         return self.__titulo
 
-        if tarefa not in usuario._lista_tarefas:
-            print(
-                f"Error: User '{usuario.get_nome()}' nao tem permisao para adicionar tarefa."
-            )
-            return
+#     def get_status(self):
+#         return self.__status
 
-        self._lista_tarefas.append(tarefa)
-        print(f"Task '{tarefa._titulo}' adicionar com sucesso.")
+
+# class Usuario:
+#     def __init__(self, nome, email):
+#         self.__nome = nome
+#         self.__email = email
+
+#     def criar_usuario(self, nome, email):
+#         novo_usuario = {"nomeUsuario": nome, "email": email}
+#         print(f"Novo usuário '{nome}' criado!")
+#         return novo_usuario
+
+#     def add_lista_usuarios(user):
+#         lista_usuarios.append(user)
+#         return len(lista_usuarios)
+
+#     def del_usuario(self, usuario):
+#         del lista_usuarios[usuario]
+
+#     def criar_tarefa(self):
+#         novo_titulo = input("Entre titulo do Tarefa: ")
+#         novo_desc = input("Entre descricao do Tarefa: ")
+#         lista_tarefas.append(Tarefa(novo_titulo, novo_desc))
+#         return len(lista_tarefas)
+
+#     def remove_tarefa(self, item_index):
+#         del lista_tarefas[item_index]
+
+#     def marcar_concluida(self, tarefa):
+#         if tarefa in lista_tarefas:
+#             tarefa.alterar_status()
+#         else:
+#             print("Error: Tarefa não encontrada na lista de tarefas do usuário.")
+
+#     def get_lista_tarefas(self):
+#         return lista_tarefas
+
+#     def get_lista_usuarios(self):
+#         return lista_usuarios
+
+#     def get_user(self, user):
+#         return lista_usuarios[user - 1]
+
+#     def get_nome(self):
+#         return self.__nome
+
+#     def get_email(self):
+#         return self.__email
+
+
+class ProjetoBD(bancoDados):
+    def __init__(self):
+        # Chama o construtor da classe pai (superclasse) para inicializar as propriedades da classe base.
+        super().__init__()
+
+    # Cria um novo projeto no banco de dados.
+    def create_projeto(self, nomeProjeto, descricao, statusProjeto):
+        self.conectar()
+        statusProjeto = statusProjeto.upper()
+        command = f'INSERT INTO projetos (nomeProjeto, descricao, statusProjeto) VALUES ("{nomeProjeto}","{descricao}" ,"{statusProjeto}")'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        self.fechar_conexao()
+
+    # Retorna todos os projetos do banco de dados.
+    def read_projetos(self):
+        self.conectar()
+        command = f"SELECT * FROM projetos"
+        self.cursor.execute(command)
+        resultados = self.cursor.fetchall()
+        self.fechar_conexao()
+        return resultados
 
     def progresso_do_projeto(self):
+        self.conectar()
         unfinished_tasks = sum(
-            1 for tarefa in self._lista_tarefas if tarefa._status == "ativa"
+            1 for tarefa in TarefaBD.read_tarefas() if tarefa.status == "A"
         )
-        total_tasks = len(self._lista_tarefas)
+        total_tasks = len(TarefaBD.read_tarefas())
         progress_percentage = (
-            (total_tasks - unfinished_tasks) / total_tasks * 100
+            ((total_tasks - unfinished_tasks) / total_tasks) * 100
             if total_tasks > 0
             else 0
         )
-        return progress_percentage
+        return print(f"{progress_percentage:} %")
 
-    def get_nome(self):
-        return self._nome
+    # Altera o status de um projeto no banco de dados.
+    def alterar_status_projeto(self, nomeProjeto, novo_status):
+        self.conectar()
+        novo_status = novo_status.upper()
+        if novo_status not in ["A", "I", "C"]:
+            raise ValueError("Status inválido. Deve ser A, I ou C.")
+        command = f'UPDATE projetos SET statusProjeto = "{novo_status}" WHERE nomeProjeto = "{nomeProjeto}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
 
-    def get_descricao(self):
-        return self._descricao
+    # Exclui um projeto do banco de dados com base no nome do projeto.
+    def delete_projeto(self, nomeProjeto):
+        self.conectar()
+        command = f'DELETE FROM projetos WHERE nomeProjeto = "{nomeProjeto}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
 
-    def to_dict(self):
-        return {
-            "nome": self._nome,
-            "descricao": self._descricao,
-            "lista_tarefas": [tarefa.to_dict() for tarefa in self._lista_tarefas],
-        }
-
-    @classmethod
-    def from_dict(cls, project_dict):
-        try:
-            project = cls(project_dict["nome"], project_dict["descricao"])
-            project._lista_tarefas = [
-                Tarefa.from_dict(task_dict)
-                for task_dict in project_dict["lista_tarefas"]
-            ]
-            return project
-        except KeyError as e:
-            raise ValueError(f"Missing key in project data: {e}")
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Error creating project from data: {e}")
-
-
-def save_to_json(data, filename):
-    try:
-        with open(filename, "w") as file:
-            json.dump(data, file, indent=2)
-    except (IOError, json.JSONDecodeError) as e:
-        raise ValueError(f"Error saving to JSON file {filename}: {e}")
+    # Atualiza a descrição de um projeto no banco de dados.
+    def update_projeto(self, nomeProjeto, nova_descricao):
+        self.conectar()
+        command = f'UPDATE projetos SET descricao ="{nova_descricao}" WHERE nomeProjeto = "{nomeProjeto}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
 
 
-def load_from_json(filename):
-    try:
-        with open(filename, "r") as file:
-            data = json.load(file)
-        return data
-    except FileNotFoundError as e:
-        raise FileNotFoundError(f"File not found: {filename}")
-    except (IOError, json.JSONDecodeError) as e:
-        raise ValueError(f"Error loading from JSON file {filename}: {e}")
+# class Projeto:
+#     def __init__(self, nome, descricao):
+#         self.__nome = nome
+#         self.__descricao = descricao
+
+#     def criar_projeto(self):
+#         novo_titulo = input("Entre nome do Projeto: ")
+#         novo_desc = input("Entre descricao do Projeto: ")
+#         lista_projetos.append(Projeto(novo_titulo, novo_desc))
+#         return len(lista_projetos)
+
+#     def adicionar_tarefa(self, tarefa, usuario):
+#         if not isinstance(tarefa, Tarefa) or not isinstance(usuario, Usuario):
+#             print("Error: Invalid task or user provided.")
+#             return
+
+#         if tarefa in lista_tarefas:
+#             print(f"Error: Task '{tarefa.__titulo}' Ja esta no projeto.")
+#             return
+
+#         if tarefa not in usuario.lista_tarefas:
+#             print(
+#                 f"Error: User '{usuario.get_nome()}' nao tem permisao para adicionar tarefa."
+#             )
+#             return
+
+#         lista_tarefas.append(tarefa)
+#         print(f"Task '{tarefa.__titulo}' adicionar com sucesso.")
+
+
+#     def get_nome(self):
+#         return self.__nome
+
+#     def get_descricao(self):
+#         return self.__descricao
 
 
 # # Example usage with user input:
@@ -216,37 +386,6 @@ def load_from_json(filename):
 #     )
 
 #     new_project = Projeto(new_project_name, new_project_description)
-#     new_project.adicionar_tarefa(new_user._lista_tarefas[0], new_user)
+#     new_project.adicionar_tarefa(new_lista_tarefas[0], new_user)
 #     progress = new_project.progresso_do_projeto()
 #     print(f"Progress of '{new_project.get_nome()}': {progress:.2f}%")
-
-#     all_users = [new_user.to_dict()]
-#     all_projects = [new_project.to_dict()]
-#     save_to_json({"usuarios": all_users, "projetos": all_projects}, "updated_data.json")
-
-#     # Load the updated data from the JSON file
-#     loaded_data = load_from_json("updated_data.json")
-
-#     # Retrieve users
-#     loaded_users = [
-#         Usuario.from_dict(user_dict) for user_dict in loaded_data["usuarios"]
-#     ]
-#     loaded_projects = [
-#         Projeto.from_dict(project_dict) for project_dict in loaded_data["projetos"]
-#     ]
-
-#     # Print loaded users and projects
-#     for loaded_user in loaded_users:
-#         print(f"\nUser: {loaded_user.get_nome()}")
-#         for task in loaded_user._lista_tarefas:
-#             print(f"  - Task: {task._titulo}, Status: {task._status}")
-
-#     for loaded_project in loaded_projects:
-#         print(f"\nProject: {loaded_project.get_nome()}")
-#         for task in loaded_project._lista_tarefas:
-#             print(f"  - Task: {task._titulo}, Status: {task._status}")
-
-# except ValueError as e:
-#     print(f"Error: {e}")
-# except KeyboardInterrupt:
-#     print("\nProgram terminated by user.")
