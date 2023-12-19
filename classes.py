@@ -3,13 +3,11 @@ from datetime import datetime
 
 
 class bancoDados:
-    # O construtor é um método especial que é executado automaticamente quando um objeto da classe é criado.
-    # Ele inicializa as propriedades da classe.
     def init(self):
         self.conexao = None
         self.cursor = None
 
-    # Cria uma conexão com o banco, define um objeto de conexão chamado self.conexao que será usado para se conectar ao banco de dados.
+    # Cria uma conexão com o banco de dados.
     def conectar(self):
         self.conexao = mysql.connector.connect(
             host="localhost", user="root", password="", database="OOP"
@@ -18,10 +16,10 @@ class bancoDados:
 
     # Fecha a conexão com o banco de dados.
     def fechar_conexao(self):
-        # Verifica se o cursor está aberto e o fecha.
+        # Verifica se o cursor está aberto e fecha o cursor.
         if self.cursor:
             self.cursor.close()
-        # Verifica se a conexão está aberta e a fecha.
+        # Verifica se a conexão está aberta e fecha a conexao.
         if self.conexao:
             self.conexao.close()
 
@@ -57,9 +55,9 @@ class UsuarioBD(bancoDados):
         return resultados
 
     # Atualiza o e-mail de um usuário no banco de dados.
-    def update_usuario(self, idUsuario, novo_email):
+    def update_usuario(self, idUsuario, novo_email, novo_nome):
         self.conectar()
-        command = f'UPDATE usuarios SET email = "{novo_email}" WHERE idUsuarios = "{idUsuario}"'
+        command = f'UPDATE usuarios SET email = "{novo_email}", nome = "{novo_nome}" WHERE idUsuarios = "{idUsuario}"'
         self.cursor.execute(command)
         self.cursor.rowcount
         self.conexao.commit()
@@ -67,7 +65,7 @@ class UsuarioBD(bancoDados):
         self.fechar_conexao()
         return resultados
 
-    # Exclui um usuário do banco de dados com base no nome.
+    # Exclui um usuário do banco de dados baseado no nome.
     def delete_usuario(self, nome):
         self.conectar()
         command = f'DELETE FROM usuarios WHERE nome = "{nome}"'
@@ -77,7 +75,7 @@ class UsuarioBD(bancoDados):
         self.fechar_conexao()
         return resultados
 
-    # Busca um usuário no banco de dados com base no ID.
+    # Busca um usuário no banco de dados baseado no ID.
     def buscar_usuario_por_id(self, idUsuario):
         self.conectar()
         command = f'SELECT * FROM usuarios WHERE idUsuarios = "{idUsuario}"'
@@ -95,10 +93,10 @@ class TarefaBD(bancoDados):
     # Cria uma nova tarefa no banco de dados.
     def create_tarefa(self, titulo, descricao, status, nomeProjeto):
         self.conectar()
-        # Obtém a data e hora atuais para a data de criação da tarefa.
+        # Atribui data e hora para criação da tarefa.
         dataCriacao = datetime.now()
         status = status.upper()
-        # Verifica se o projeto existe e obtém o ID do projeto.
+        # Verifica se o projeto existe e atribui o ID do projeto.
         idProjeto = self.verificar_projeto_existente(nomeProjeto)
         if idProjeto is None:
             raise ValueError(f"Projeto '{nomeProjeto}' não encontrado.")
@@ -112,15 +110,15 @@ class TarefaBD(bancoDados):
     def atribuir_tarefa_a_usuarios(self, idTarefas, idUsuario):
         self.conectar()
         for idUsuario in idUsuario:
-            command = f"INSERT INTO usuariostarefas (idTarefas, idUsuario) VALUES ({idTarefas}, {idUsuario})"
+            command = f"INSERT INTO usuariostarefas (coddTarefas, coddUsuario) VALUES ({idTarefas}, {idUsuario})"
             self.cursor.execute(command)
         self.conexao.commit()
         self.fechar_conexao()
 
     # Remove a atribuição de uma tarefa a um usuário no banco de dados.
-    def remover_atribuicao_tarefa_usuario(self, idTarefas, idUsuario):
+    def remover_atribuicao_usuario_tarefa(self, idTarefas, idUsuario):
         self.conectar()
-        command = f"DELETE FROM usuariostarefas WHERE idTarefas = {idTarefas} AND idUsuario = {idUsuario}"
+        command = f"DELETE FROM usuariostarefas WHERE codTarefas = {idTarefas} AND codUsuario = {idUsuario}"
         self.cursor.execute(command)
         self.conexao.commit()
         resultados = self.cursor.rowcount
@@ -156,7 +154,7 @@ class TarefaBD(bancoDados):
         if novo_status not in ["A", "I", "C"]:
             raise ValueError("Status inválido. Deve ser A, I ou C.")
         command = f'UPDATE tarefas SET status = "{novo_status} "'
-        # Se o novo status for "C" (Concluído), atualiza a dataConclusao para a data de hoje quando ele conclui a tarefa
+        # Se o novo status for "C" (Concluído), atualiza a dataConclusao.
         if novo_status == "C":
             data_conclusao = datetime.now()
             command += f', dataConclusao = "{data_conclusao} "'
@@ -176,10 +174,81 @@ class TarefaBD(bancoDados):
         self.fechar_conexao()
         return resultados
 
-    # Exclui uma tarefa do banco de dados com base no título.
+    # Exclui uma tarefa do banco de dados baseado no título.
     def delete_tarefa(self, titulo):
         self.conectar()
         command = f'DELETE FROM tarefas WHERE titulo = "{titulo}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
+
+
+class ProjetoBD(bancoDados):
+    def __init__(self):
+        # Chama o construtor da classe pai (superclasse) para inicializar as propriedades da classe base.
+        super().__init__()
+
+    # Cria um novo projeto no banco de dados.
+    def create_projeto(self, nomeProjeto, descricao, statusProjeto):
+        self.conectar()
+        statusProjeto = statusProjeto.upper()
+        command = f'INSERT INTO projetos (nomeProjeto, descricao, statusProjeto) VALUES ("{nomeProjeto}","{descricao}" ,"{statusProjeto}")'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        self.fechar_conexao()
+
+    # Retorna todos os projetos do banco de dados.
+    def read_projetos(self):
+        self.conectar()
+        command = f"SELECT * FROM projetos"
+        self.cursor.execute(command)
+        resultados = self.cursor.fetchall()
+        self.fechar_conexao()
+        return resultados
+
+    # Mostra o progresso do projeto.
+    def progresso_do_projeto(self):
+        self.conectar()
+        unfinished_tasks = sum(
+            1 for tarefa in TarefaBD.read_tarefas() if tarefa.status == "A"
+        )
+        total_tasks = len(TarefaBD.read_tarefas())
+        progress_percentage = (
+            ((total_tasks - unfinished_tasks) / total_tasks) * 100
+            if total_tasks > 0
+            else 0
+        )
+        return print(f"{progress_percentage:} %")
+
+    # Altera o status de um projeto no banco de dados.
+    def alterar_status_projeto(self, nomeProjeto, novo_status):
+        self.conectar()
+        novo_status = novo_status.upper()
+        if novo_status not in ["A", "I", "C"]:
+            raise ValueError("Status inválido. Deve ser A, I ou C.")
+        command = f'UPDATE projetos SET statusProjeto = "{novo_status}" WHERE nomeProjeto = "{nomeProjeto}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
+
+    # Exclui um projeto do banco de dados baseado no nome do projeto.
+    def delete_projeto(self, nomeProjeto):
+        self.conectar()
+        command = f'DELETE FROM projetos WHERE nomeProjeto = "{nomeProjeto}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
+
+    # Atualiza a descrição de um projeto no banco de dados.
+    def update_projeto(self, nomeProjeto, nova_descricao):
+        self.conectar()
+        command = f'UPDATE projetos SET descricao ="{nova_descricao}" WHERE nomeProjeto = "{nomeProjeto}"'
         self.cursor.execute(command)
         self.conexao.commit()
         resultados = self.cursor.rowcount
@@ -259,76 +328,6 @@ class TarefaBD(bancoDados):
 
 #     def get_email(self):
 #         return self.__email
-
-
-class ProjetoBD(bancoDados):
-    def __init__(self):
-        # Chama o construtor da classe pai (superclasse) para inicializar as propriedades da classe base.
-        super().__init__()
-
-    # Cria um novo projeto no banco de dados.
-    def create_projeto(self, nomeProjeto, descricao, statusProjeto):
-        self.conectar()
-        statusProjeto = statusProjeto.upper()
-        command = f'INSERT INTO projetos (nomeProjeto, descricao, statusProjeto) VALUES ("{nomeProjeto}","{descricao}" ,"{statusProjeto}")'
-        self.cursor.execute(command)
-        self.conexao.commit()
-        self.fechar_conexao()
-
-    # Retorna todos os projetos do banco de dados.
-    def read_projetos(self):
-        self.conectar()
-        command = f"SELECT * FROM projetos"
-        self.cursor.execute(command)
-        resultados = self.cursor.fetchall()
-        self.fechar_conexao()
-        return resultados
-
-    def progresso_do_projeto(self):
-        self.conectar()
-        unfinished_tasks = sum(
-            1 for tarefa in TarefaBD.read_tarefas() if tarefa.status == "A"
-        )
-        total_tasks = len(TarefaBD.read_tarefas())
-        progress_percentage = (
-            ((total_tasks - unfinished_tasks) / total_tasks) * 100
-            if total_tasks > 0
-            else 0
-        )
-        return print(f"{progress_percentage:} %")
-
-    # Altera o status de um projeto no banco de dados.
-    def alterar_status_projeto(self, nomeProjeto, novo_status):
-        self.conectar()
-        novo_status = novo_status.upper()
-        if novo_status not in ["A", "I", "C"]:
-            raise ValueError("Status inválido. Deve ser A, I ou C.")
-        command = f'UPDATE projetos SET statusProjeto = "{novo_status}" WHERE nomeProjeto = "{nomeProjeto}"'
-        self.cursor.execute(command)
-        self.conexao.commit()
-        resultados = self.cursor.rowcount
-        self.fechar_conexao()
-        return resultados
-
-    # Exclui um projeto do banco de dados com base no nome do projeto.
-    def delete_projeto(self, nomeProjeto):
-        self.conectar()
-        command = f'DELETE FROM projetos WHERE nomeProjeto = "{nomeProjeto}"'
-        self.cursor.execute(command)
-        self.conexao.commit()
-        resultados = self.cursor.rowcount
-        self.fechar_conexao()
-        return resultados
-
-    # Atualiza a descrição de um projeto no banco de dados.
-    def update_projeto(self, nomeProjeto, nova_descricao):
-        self.conectar()
-        command = f'UPDATE projetos SET descricao ="{nova_descricao}" WHERE nomeProjeto = "{nomeProjeto}"'
-        self.cursor.execute(command)
-        self.conexao.commit()
-        resultados = self.cursor.rowcount
-        self.fechar_conexao()
-        return resultados
 
 
 # class Projeto:

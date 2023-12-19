@@ -4,52 +4,14 @@ gerencia_geral = """
 =========================================
     MENU - Gerenciamento Geral
 =========================================
-    1- Menu de Usuários
-    2- Menu de Tarefas
-    3- Menu de Projetos
+    1- Menu de usuários
+    2- Menu de tarefas
+    3- Menu de projetos
     0- Sair
-"""
-
-gerencia_users = """
-=========================================
-    MENU - Gerenciamento de Usuários
-=========================================
-    1- Inserir usuário
-    2- Listar usuários
-    3- Atualizar usuários
-    4- Excluir usuários
-    0- Voltar
-"""
-
-gerencia_tarefas = """
-=========================================
-    MENU - Gerenciamento de Tarefas
-=========================================
-    1- Criar Tarefas
-    2- Listar Tarefas
-    3- Atualizar descrição das Tarefas
-    4- Deletar Tarefas
-    5- Atualizar status das Tarefas
-    6- Atribuir tarefa ao usuário
-    7- Remover tarefa ao usuário
-    0- Voltar ao Menu Principal
-"""
-
-gerencia_projeto = """
-=========================================
-    MENU - Gerenciamento de Projetos
-=========================================
-    1- Criar Projeto
-    2- Listar Projeto
-    3- Atualizar descrição do Projeto
-    4- Deletar Projeto
-    5- Atualizar status do Projeto
-    0- Voltar ao Menu Projeto
 """
 
 
 def menu_principal():
-    # Cria uma instância de UsuarioDB, TarefaDB e ProjetoDB.
     usuario_BD = UsuarioBD()
     tarefa_BD = TarefaBD()
     projeto_BD = ProjetoBD()
@@ -57,7 +19,6 @@ def menu_principal():
     while True:
         print(f"{gerencia_geral}")
 
-        # Solicita a escolha do usuário.
         escolha = input("Escolha um número: ")
 
         if escolha == "1":
@@ -77,103 +38,128 @@ def menu_principal():
             break
         else:
             # Opção inválida.
-            print("Opção inválida. Tente novamente.")
+            print("Opção inválida. Tente de novo.")
+
+
+gerencia_users = """
+=========================================
+    MENU - Gerenciamento de Usuários
+=========================================
+    1- Inserir usuário
+    2- Listar usuários
+    3- Atualizar usuários
+    4- Excluir usuários
+    0- Voltar
+"""
 
 
 def menu_usuarios(usuario_BD):
     while True:
         print(f"{gerencia_users}")
 
-        # Solicita a escolha do usuário.
         escolha = input("Escolha um número: ")
 
         if escolha == "1":
-            # Opção para inserir um novo usuário.
             nomeUsuario = input("Nome do usuário: ")
             email = input("Email do usuário: ")
             usuario_BD.create_usuario(nomeUsuario, email)
-            print("Usuário adicionado com sucesso!")
+            print("Usuário adicionado!")
+
         elif escolha == "2":
-            # Opção para listar todos os usuários.
             resultados = usuario_BD.read_usuarios()
             for usuario in resultados:
                 print(
-                    f"ID: {usuario[0]}, Nome do Usuários: {usuario[1]}, Email: {usuario[2]}"
+                    f"ID: {usuario[0]}, Nome dos usuários: {usuario[1]}, Email: {usuario[2]}"
                 )
+
         elif escolha == "3":
-            # Opção para atualizar um usuário existente.
-            idUsuarios = input("ID do usuário que deseja atualizar: ")
-            novo_email = input("Insira o novo email: ")
-            if usuario_BD.update_usuario(idUsuarios, novo_email) > 0:
-                print("Usuário atualizado com sucesso!")
+            idUsuarios = input("ID do usuário que voce quer atualizar: ")
+            novo_nome = input("Digite o nove nome: ")
+            novo_email = input("Digite o novo email: ")
+
+            if usuario_BD.update_usuario(idUsuarios, novo_email, novo_nome) > 0:
+                print("Usuário atualizado!")
             else:
                 print("Usuário não encontrado.")
+
         elif escolha == "4":
-            # Opção para excluir um usuário.
-            idUsuarios = input("idUser do usuário que deseja excluir: ")
+            idUsuarios = input("ID do usuário que voce quer excluir: ")
             if usuario_BD.delete_usuario(idUsuarios) > 0:
-                print("Usuário excluído com sucesso!")
+                print("Usuário excluído!")
             else:
                 print("Usuário não encontrado.")
+
         elif escolha == "0":
-            # Retorna ao Menu Principal.
             break
+
         else:
-            # Opção inválida.
-            print("Opção inválida. Tente novamente.")
+            print("Opção inválida. Tente de novo.")
+
+
+gerencia_tarefas = """
+=========================================
+    MENU - Gerenciamento de Tarefas
+=========================================
+    1- Criar tarefas
+    2- Listar tarefas
+    3- Atualizar descrição das tarefas
+    4- Deletar tarefas
+    5- Atualizar status das tarefas
+    6- Atribuir tarefa ao usuário
+    7- Remover tarefa ao usuário
+    0- Voltar ao menu principal
+"""
 
 
 def menu_tarefas(tarefa_BD):
     while True:
         print(f"{gerencia_tarefas}")
 
-        # Solicita a escolha do usuário.
         escolha = input("Escolha um número: ")
 
         if escolha == "1":
-            # Opção para inserir uma nova tarefa.
             titulo = input("Digite o título da tarefa: ")
             descricao = input("Digite a descrição da tarefa: ")
             status = input("Status da tarefa (A-Ativa, C-Completa): ")
-            nomeProjeto = input("Digite qual projeto ela pertence: ")
+            nomeProjeto = input("Digite o nome do projeto a que pertence a tarefa: ")
             try:
                 tarefa_BD.create_tarefa(titulo, descricao, status, nomeProjeto)
-                print("Tarefa adicionada com sucesso!")
+                print("Tarefa adicionada!")
             except ValueError as e:
                 print(str(e))
+
         elif escolha == "2":
-            # Opção para listar todas as tarefas.
             resultados = tarefa_BD.read_tarefas()
             for tarefa in resultados:
                 print(
-                    f"Titulo: {tarefa[1]}, Descrição: {tarefa[2]}, Status: {tarefa[3]}, Data Criação: {tarefa[4]}, Data Conclusão: {tarefa[5]}, ID Projeto: {tarefa[6]}"
+                    f"Titulo: {tarefa[0]}, Descrição: {tarefa[1]}, Status: {tarefa[2]}, Data Criação: {tarefa[3]}, Data Conclusão: {tarefa[4]}, ID Projeto: {tarefa[5]}"
                 )
+
         elif escolha == "3":
-            # Opção para atualizar a descrição de uma tarefa.
-            titulo = input("Título da tarefa que deseja atualizar: ")
-            nova_descricao = input("Nova descrição: ")
+            titulo = input("Título da tarefa que voce quer atualizar: ")
+            nova_descricao = input("Digite uma nova descrição: ")
             if tarefa_BD.update_tarefa(titulo, nova_descricao) > 0:
-                print("Descrição atualizada com sucesso!")
+                print("Descrição atualizada!")
             else:
                 print("Tarefa não encontrada.")
+
         elif escolha == "4":
-            # Opção para excluir uma tarefa.
-            titulo = input("Título da tarefa que deseja excluir: ")
+            titulo = input("Título da tarefa que voce quer excluir: ")
             if tarefa_BD.delete_tarefa(titulo) > 0:
-                print("Tarefa excluída com sucesso!")
+                print("Tarefa excluída!")
             else:
                 print("Tarefa não encontrada.")
+
         elif escolha == "5":
-            # Opção para atualizar o status de uma tarefa.
-            titulo = input("Título da tarefa que deseja atualizar o status: ")
-            novo_status = input("Novo status: ")
+            titulo = input("Título da tarefa que voce quer atualizar o status: ")
+            novo_status = input("Digite um novo status: ")
             if tarefa_BD.alterar_status_tarefa(titulo, novo_status) > 0:
-                print("Status atualizado com sucesso!")
+                print("Status atualizado!")
             else:
                 print("Tarefa não encontrada.")
+
         elif escolha == "6":
-            # Opção para atribuir tarefa a usuários.
-            idTarefas = input("Título da tarefa que deseja atribuir a usuários: ")
+            idTarefas = input("Título da tarefa que voce quer atribuir a usuários: ")
             idUsuario = [
                 int(idUsuario)
                 for idUsuario in input(
@@ -181,82 +167,84 @@ def menu_tarefas(tarefa_BD):
                 ).split(",")
             ]
             tarefa_BD.atribuir_tarefa_a_usuarios(idTarefas, idUsuario)
-            print("Tarefa atribuída aos usuários com sucesso!")
+            print("Tarefa atribuída aos usuários!")
+
         elif escolha == "7":
-            # Opção para remover a atribuição de tarefa a usuário.
             idTarefas = input("Título da tarefa: ")
             idUsuario = int(input("ID do usuário para remover a atribuição: "))
-            if tarefa_BD.remover_atribuicao_tarefa_usuario(idTarefas, idUsuario) > 0:
-                print("Atribuição removida com sucesso!")
+            if tarefa_BD.remover_atribuicao_usuario_tarefa(idTarefas, idUsuario) > 0:
+                print("Atribuição removida!")
             else:
                 print("Atribuição não encontrada.")
+
         elif escolha == "0":
-            # Retorna ao Menu Principal.
             break
+
         else:
-            # Opção inválida.
-            print("Opção inválida. Tente novamente.")
+            print("Opção inválida. Tente de novo.")
 
 
-# Parâmetros são os "espaços reservados" na definição da função.
-# Argumentos são os valores reais que você fornece quando chama a função.
+gerencia_projeto = """
+=========================================
+    MENU - Gerenciamento de Projetos
+=========================================
+    1- Criar projeto
+    2- Listar projeto
+    3- Atualizar descrição do projeto
+    4- Excluir projeto
+    5- Atualizar status do projeto
+    0- Voltar ao menu projeto
+"""
 
 
 def menu_projetos(projeto_BD):
     while True:
-        # Exibe as opções do Menu de Projetos.
-        print("\nMenu de Projeto:")
         print(f"{gerencia_projeto}")
-
-        # Solicita a escolha do usuário.
         escolha = input("Escolha um número: ")
 
         if escolha == "1":
-            # Opção para inserir um novo projeto.
-            nomeProjeto = input("Titulo do Projeto: ")
-            descricao = input("Descrição do Projeto: ")
-            statusProjeto = input("Status do Projeto: ")
+            nomeProjeto = input("Titulo do projeto: ")
+            descricao = input("Descrição do projeto: ")
+            statusProjeto = input("Status do projeto: ")
             projeto_BD.create_projeto(nomeProjeto, descricao, statusProjeto)
-            print("Projeto adicionado com sucesso!")
+            print("Projeto adicionado!")
+
         elif escolha == "2":
-            # Opção para listar todos os projetos.
             resultados = projeto_BD.read_projetos()
             for projeto in resultados:
                 print(
                     f"Titulo: {projeto[1]}, descricao: {projeto[2]}, status: {projeto[3]}"
                 )
+
         elif escolha == "3":
-            # Opção para atualizar a descrição de um projeto existente.
-            nomeProjeto = input("Titulo do projeto que deseja atualizar: ")
-            nova_descricao = input("Nova descrição: ")
+            nomeProjeto = input("Titulo do projeto que voce quer atualizar: ")
+            nova_descricao = input("Digite uma nova descrição: ")
             if projeto_BD.update_projeto(nomeProjeto, nova_descricao) > 0:
-                print("Descrição atualizada com sucesso!")
+                print("Descrição atualizada!")
             else:
                 print("Projeto não encontrado.")
+
         elif escolha == "4":
-            # Opção para excluir um projeto.
-            nomeProjeto = input("Titulo do projeto que deseja excluir: ")
+            nomeProjeto = input("Titulo do projeto que voce quer excluir: ")
             if projeto_BD.delete_projeto(nomeProjeto) > 0:
-                print("Projeto excluído com sucesso!")
+                print("Projeto excluído!")
             else:
                 print("Projeto não encontrado.")
+
         elif escolha == "5":
-            # Opção para atualizar o status de um projeto.
-            nomeProjeto = input("Titulo do projeto que deseja atualizar o status: ")
-            novo_status = input("Novo status: ")
+            nomeProjeto = input("Titulo do projeto que voce quer atualizar o status: ")
+            novo_status = input("Digite um novo status: ")
             if projeto_BD.alterar_status_projeto(nomeProjeto, novo_status) > 0:
-                print("Status atualizado com sucesso!")
+                print("Status atualizado!")
             else:
                 print("Projeto não encontrado.")
+
         elif escolha == "0":
-            # Volta ao Menu Principal.
             break
         else:
-            # Opção inválida.
-            print("Opção inválida. Tente novamente.")
+            print("Opção inválida. Tente de novo.")
 
 
-# O código dentro deste bloco será executado somente se o script Python for executado como o programa principal, em vez de ser importado como um módulo em outro script.
 if __name__ == "__main__":
     menu_principal()
 
