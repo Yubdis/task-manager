@@ -33,8 +33,8 @@ def menu_principal():
         elif escolha == "0":
             # Fecha as conexões e encerra o programa.
             usuario_BD.close()
-            projeto_BD.close()
             tarefa_BD.close()
+            projeto_BD.close()
             break
         else:
             # Opção inválida.
@@ -66,7 +66,7 @@ def menu_usuarios(usuario_BD):
             print("Usuário adicionado!")
 
         elif escolha == "2":
-            resultados = usuario_BD.read_usuarios()
+            resultados = usuario_BD.mostrar_usuarios()
             for usuario in resultados:
                 print(
                     f"ID: {usuario[0]}, Nome dos usuários: {usuario[1]}, Email: {usuario[2]}"
@@ -129,10 +129,10 @@ def menu_tarefas(tarefa_BD):
                 print(str(e))
 
         elif escolha == "2":
-            resultados = tarefa_BD.read_tarefas()
+            resultados = tarefa_BD.mostrar_tarefas()
             for tarefa in resultados:
                 print(
-                    f"Titulo: {tarefa[0]}, Descrição: {tarefa[1]}, Status: {tarefa[2]}, Data Criação: {tarefa[3]}, Data Conclusão: {tarefa[4]}, ID Projeto: {tarefa[5]}"
+                    f"Titulo: {tarefa[1]}, Descrição: {tarefa[2]}, Status: {tarefa[3]}, Data Criação: {tarefa[4]}, Data Conclusão: {tarefa[5]}, ID Projeto: {tarefa[6]}"
                 )
 
         elif escolha == "3":
@@ -159,7 +159,9 @@ def menu_tarefas(tarefa_BD):
                 print("Tarefa não encontrada.")
 
         elif escolha == "6":
-            idTarefas = input("Título da tarefa que voce quer atribuir a usuários: ")
+            idTarefas = input(
+                "Digite o ID da tarefa que voce quer atribuir a usuários: "
+            )
             idUsuario = [
                 int(idUsuario)
                 for idUsuario in input(
@@ -170,7 +172,7 @@ def menu_tarefas(tarefa_BD):
             print("Tarefa atribuída aos usuários!")
 
         elif escolha == "7":
-            idTarefas = input("Título da tarefa: ")
+            idTarefas = input("Digite o ID da tarefa: ")
             idUsuario = int(input("ID do usuário para remover a atribuição: "))
             if tarefa_BD.remover_atribuicao_usuario_tarefa(idTarefas, idUsuario) > 0:
                 print("Atribuição removida!")
@@ -210,10 +212,10 @@ def menu_projetos(projeto_BD):
             print("Projeto adicionado!")
 
         elif escolha == "2":
-            resultados = projeto_BD.read_projetos()
+            resultados = projeto_BD.mostrar_projetos()
             for projeto in resultados:
                 print(
-                    f"Titulo: {projeto[1]}, descricao: {projeto[2]}, status: {projeto[3]}"
+                    f"Titulo: {projeto[1]} descricao: {projeto[2]} status: {projeto[3]}"
                 )
 
         elif escolha == "3":

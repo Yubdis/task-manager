@@ -37,16 +37,8 @@ class UsuarioBD(bancoDados):
         self.conexao.commit()
         self.fechar_conexao()
 
-    # Relaciona usuários a tarefas no banco de dados.
-    def relacionar_usuarios_tarefas(self, idUsuarios, idTarefas):
-        self.conectar()
-        command = f"INSERT INTO usuariostarefas (idTarefas, idUsuarios) VALUES ({idTarefas}, {idUsuarios})"
-        self.cursor.execute(command)
-        self.conexao.commit()
-        self.fechar_conexao()
-
     # Retorna todos os usuários do banco de dados.
-    def read_usuarios(self):
+    def mostrar_usuarios(self):
         self.conectar()
         command = "SELECT * FROM usuarios"
         self.cursor.execute(command)
@@ -75,6 +67,14 @@ class UsuarioBD(bancoDados):
         self.fechar_conexao()
         return resultados
 
+    # Relaciona usuários a tarefas no banco de dados.
+    def relacionar_usuarios_tarefas(self, idUsuarios, idTarefas):
+        self.conectar()
+        command = f"INSERT INTO usuariostarefas (idTarefas, idUsuarios) VALUES ({idTarefas}, {idUsuarios})"
+        self.cursor.execute(command)
+        self.conexao.commit()
+        self.fechar_conexao()
+
     # Busca um usuário no banco de dados baseado no ID.
     def buscar_usuario_por_id(self, idUsuario):
         self.conectar()
@@ -101,41 +101,19 @@ class TarefaBD(bancoDados):
         if idProjeto is None:
             raise ValueError(f"Projeto '{nomeProjeto}' não encontrado.")
 
-        command = f'INSERT INTO tarefas (titulo, descricao, status, dataCriacao, idProjeto) VALUES ("{titulo}","{descricao}" ,"{status}","{dataCriacao}" ,"{idProjeto}")'
+        command = f'INSERT INTO tarefas (titulo, descricao, status, data_criacao, codProjeto) VALUES ("{titulo}","{descricao}" ,"{status}","{dataCriacao}" ,"{idProjeto}")'
         self.cursor.execute(command)
         self.conexao.commit()
         self.fechar_conexao()
 
-    # Atribui tarefa(s) a usuário(s) no banco de dados.
-    def atribuir_tarefa_a_usuarios(self, idTarefas, idUsuario):
+    # Retorna todas as tarefas do banco de dados.
+    def mostrar_tarefas(self):
         self.conectar()
-        for idUsuario in idUsuario:
-            command = f"INSERT INTO usuariostarefas (coddTarefas, coddUsuario) VALUES ({idTarefas}, {idUsuario})"
-            self.cursor.execute(command)
-        self.conexao.commit()
-        self.fechar_conexao()
-
-    # Remove a atribuição de uma tarefa a um usuário no banco de dados.
-    def remover_atribuicao_usuario_tarefa(self, idTarefas, idUsuario):
-        self.conectar()
-        command = f"DELETE FROM usuariostarefas WHERE codTarefas = {idTarefas} AND codUsuario = {idUsuario}"
+        command = f"SELECT * FROM tarefas"
         self.cursor.execute(command)
-        self.conexao.commit()
-        resultados = self.cursor.rowcount
+        resultados = self.cursor.fetchall()
         self.fechar_conexao()
         return resultados
-
-    # Verifica se um projeto existe no banco de dados e retorna o ID do projeto.
-    def verificar_projeto_existente(self, nomeProjeto):
-        self.conectar()
-        command = f'SELECT idProjeto  FROM projetos WHERE nomeProjeto = "{nomeProjeto}"'
-        self.cursor.execute(command)
-        resultado = self.cursor.fetchone()
-
-        if resultado is not None:
-            return resultado[0]
-        else:
-            return None
 
     # Atualiza a descrição de uma tarefa no banco de dados.
     def update_tarefa(self, titulo, nova_descricao):
@@ -144,33 +122,6 @@ class TarefaBD(bancoDados):
         self.cursor.execute(command)
         self.conexao.commit()
         resultados = self.cursor.rowcount
-        self.fechar_conexao()
-        return resultados
-
-    # Altera o status de uma tarefa no banco de dados.
-    def alterar_status_tarefa(self, titulo, novo_status):
-        self.conectar()
-        novo_status = novo_status.upper()
-        if novo_status not in ["A", "I", "C"]:
-            raise ValueError("Status inválido. Deve ser A, I ou C.")
-        command = f'UPDATE tarefas SET status = "{novo_status} "'
-        # Se o novo status for "C" (Concluído), atualiza a dataConclusao.
-        if novo_status == "C":
-            data_conclusao = datetime.now()
-            command += f', dataConclusao = "{data_conclusao} "'
-        command += f' WHERE titulo = "{titulo}"'
-        self.cursor.execute(command)
-        self.conexao.commit()
-        resultados = self.cursor.rowcount
-        self.fechar_conexao()
-        return resultados
-
-    # Retorna todas as tarefas do banco de dados.
-    def read_tarefas(self):
-        self.conectar()
-        command = f"SELECT * FROM tarefas"
-        self.cursor.execute(command)
-        resultados = self.cursor.fetchall()
         self.fechar_conexao()
         return resultados
 
@@ -183,6 +134,55 @@ class TarefaBD(bancoDados):
         resultados = self.cursor.rowcount
         self.fechar_conexao()
         return resultados
+
+    # Altera o status de uma tarefa no banco de dados.
+    def alterar_status_tarefa(self, titulo, novo_status):
+        self.conectar()
+        novo_status = novo_status.upper()
+        if novo_status not in ["A", "C"]:
+            raise ValueError("Status inválido. Deve ser A ou C.")
+        command = f'UPDATE tarefas SET status = "{novo_status} "'
+        # Se o novo status for "C" (Concluído), atualiza a data_conclusao.
+        if novo_status == "C":
+            data_conclusao = datetime.now()
+            command += f', data_conclusao = "{data_conclusao} "'
+        command += f' WHERE titulo = "{titulo}"'
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
+
+    # Atribui tarefa(s) a usuário(s) no banco de dados.
+    def atribuir_tarefa_a_usuarios(self, idTarefas, idUsuario):
+        self.conectar()
+        for idUsuario in idUsuario:
+            command = f"INSERT INTO usuariostarefas (codTarefas, codUsuarios) VALUES ({idTarefas}, {idUsuario})"
+            self.cursor.execute(command)
+        self.conexao.commit()
+        self.fechar_conexao()
+
+    # Remove a atribuição de uma tarefa a um usuário no banco de dados.
+    def remover_atribuicao_usuario_tarefa(self, idTarefas, idUsuario):
+        self.conectar()
+        command = f"DELETE FROM usuariostarefas WHERE codTarefas = {idTarefas} AND codUsuarios = {idUsuario}"
+        self.cursor.execute(command)
+        self.conexao.commit()
+        resultados = self.cursor.rowcount
+        self.fechar_conexao()
+        return resultados
+
+    # Verifica se um projeto existe no banco de dados e retorna o ID do projeto.
+    def verificar_projeto_existente(self, nomeProjeto):
+        self.conectar()
+        command = f'SELECT idProjeto FROM projetos WHERE nomeProjeto = "{nomeProjeto}"'
+        self.cursor.execute(command)
+        resultado = self.cursor.fetchone()
+
+        if resultado is not None:
+            return resultado[0]
+        else:
+            return None
 
 
 class ProjetoBD(bancoDados):
@@ -200,7 +200,7 @@ class ProjetoBD(bancoDados):
         self.fechar_conexao()
 
     # Retorna todos os projetos do banco de dados.
-    def read_projetos(self):
+    def mostrar_projetos(self):
         self.conectar()
         command = f"SELECT * FROM projetos"
         self.cursor.execute(command)
@@ -208,27 +208,10 @@ class ProjetoBD(bancoDados):
         self.fechar_conexao()
         return resultados
 
-    # Mostra o progresso do projeto.
-    def progresso_do_projeto(self):
+    # Atualiza a descrição de um projeto no banco de dados.
+    def update_projeto(self, nomeProjeto, nova_descricao):
         self.conectar()
-        unfinished_tasks = sum(
-            1 for tarefa in TarefaBD.read_tarefas() if tarefa.status == "A"
-        )
-        total_tasks = len(TarefaBD.read_tarefas())
-        progress_percentage = (
-            ((total_tasks - unfinished_tasks) / total_tasks) * 100
-            if total_tasks > 0
-            else 0
-        )
-        return print(f"{progress_percentage:} %")
-
-    # Altera o status de um projeto no banco de dados.
-    def alterar_status_projeto(self, nomeProjeto, novo_status):
-        self.conectar()
-        novo_status = novo_status.upper()
-        if novo_status not in ["A", "I", "C"]:
-            raise ValueError("Status inválido. Deve ser A, I ou C.")
-        command = f'UPDATE projetos SET statusProjeto = "{novo_status}" WHERE nomeProjeto = "{nomeProjeto}"'
+        command = f'UPDATE projetos SET descricao ="{nova_descricao}" WHERE nomeProjeto = "{nomeProjeto}"'
         self.cursor.execute(command)
         self.conexao.commit()
         resultados = self.cursor.rowcount
@@ -245,15 +228,32 @@ class ProjetoBD(bancoDados):
         self.fechar_conexao()
         return resultados
 
-    # Atualiza a descrição de um projeto no banco de dados.
-    def update_projeto(self, nomeProjeto, nova_descricao):
+    # Altera o status de um projeto no banco de dados.
+    def alterar_status_projeto(self, nomeProjeto, novo_status):
         self.conectar()
-        command = f'UPDATE projetos SET descricao ="{nova_descricao}" WHERE nomeProjeto = "{nomeProjeto}"'
+        novo_status = novo_status.upper()
+        if novo_status not in ["A", "I", "C"]:
+            raise ValueError("Status inválido. Deve ser A, I ou C.")
+        command = f'UPDATE projetos SET statusProjeto = "{novo_status}" WHERE nomeProjeto = "{nomeProjeto}"'
         self.cursor.execute(command)
         self.conexao.commit()
         resultados = self.cursor.rowcount
         self.fechar_conexao()
         return resultados
+
+    # Mostra o progresso do projeto.
+    def progresso_do_projeto(self):
+        self.conectar()
+        unfinished_tasks = sum(
+            1 for tarefa in TarefaBD.read_tarefas() if tarefa.status == "A"
+        )
+        total_tasks = len(TarefaBD.read_tarefas())
+        progress_percentage = (
+            ((total_tasks - unfinished_tasks) / total_tasks) * 100
+            if total_tasks > 0
+            else 0
+        )
+        return print(f"{progress_percentage:} %")
 
 
 # class Tarefa:
