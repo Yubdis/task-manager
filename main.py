@@ -83,7 +83,7 @@ def menu_usuarios(usuario_BD):
                 print("Usuário não encontrado.")
 
         elif escolha == "4":
-            idUsuarios = input("ID do usuário que voce quer excluir: ")
+            idUsuarios = (input("Digite o nome do usuário que voce quer excluir: "))
             if usuario_BD.delete_usuario(idUsuarios) > 0:
                 print("Usuário excluído!")
             else:
